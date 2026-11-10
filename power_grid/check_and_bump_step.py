@@ -27,3 +27,4 @@ class CheckAndBumpStep:
     def check_and_bump_to_step_3(self) -> None:
         """Starts Step 3 at the next phase after the Step 3 card is drawn."""
         raise NotImplementedError
+    
