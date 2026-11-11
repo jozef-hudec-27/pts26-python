@@ -1,7 +1,10 @@
 # pylint: disable=unused-argument
 from typing import Sequence
 
+from power_grid.maximum_number_of_usable_power_plants import MaximumNumberOfUsablePowerPlants
 from power_grid.simple_types import PowerPlant, PowerPlantNumber, RequestError, Resource
+from power_grid.store_resources import StoreResources
+from power_grid.use_power_plants import UsePowerPlants
 
 
 class PlayerPowerPlants:
@@ -58,11 +61,13 @@ class PlayerPowerPlants:
 
         resources is the full available inventory.
         """
-        raise NotImplementedError
+        return MaximumNumberOfUsablePowerPlants().number_of_suppliable_towns(
+            resources, self._power_plants
+        )
 
     def can_store_resources(self, resources: Sequence[Resource]) -> bool:
         """Checks if owned plants can store the full inventory."""
-        raise NotImplementedError
+        return StoreResources().can_store_resources(resources, self._power_plants)
 
     def use_power_plant(
         self, ppns: Sequence[PowerPlantNumber], resources_to_burn: Sequence[Resource]
@@ -73,4 +78,12 @@ class PlayerPowerPlants:
         fuel allocation. The caller checks fuel ownership and consumes
         it after success.
         """
-        raise NotImplementedError
+        owned_plants = {plant.number.number: plant for plant in self._power_plants}
+        selected_plants: list[PowerPlant] = []
+        for ppn in ppns:
+            plant = owned_plants.get(ppn.number)
+            if plant is None:
+                return RequestError(f"Power plant {ppn.number} is not owned.")
+            selected_plants.append(plant)
+
+        return UsePowerPlants().number_of_suppliable_towns(resources_to_burn, selected_plants)
