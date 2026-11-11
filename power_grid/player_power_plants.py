@@ -13,11 +13,24 @@ class PlayerPowerPlants:
         Copies the initial collection. Raise ValueError for a < 1 limit,
         repeated plant numbers or an initial collection over limit.
         """
-        raise NotImplementedError
+        if power_plant_limit < 1:
+            raise ValueError("Power plant limit must be positive.")
+        plant_numbers = [plant.number.number for plant in power_plants]
+        if len(plant_numbers) != len(set(plant_numbers)):
+            raise ValueError("Power plant numbers must be unique.")
+        if len(power_plants) > power_plant_limit:
+            raise ValueError("The initial power plant set is too large.")
+
+        self._power_plant_limit = power_plant_limit
+        self._power_plants = list(power_plants)
 
     def best_power_plant(self) -> PowerPlantNumber | None:
         """Returns the highest owned plant number, None if no plants are owned."""
-        raise NotImplementedError
+        if not self._power_plants:
+            return None
+
+        best_plant = max(self._power_plants, key=lambda plant: plant.number.number)
+        return best_plant.number
 
     def receive_power_plant(self, power_plant: PowerPlant) -> bool:
         """Adds a plant and returns whether the collection is within its limit
