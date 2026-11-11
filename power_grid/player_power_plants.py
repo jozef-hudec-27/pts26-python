@@ -1,4 +1,3 @@
-# pylint: disable=unused-argument
 from typing import Sequence
 
 from power_grid.maximum_number_of_usable_power_plants import MaximumNumberOfUsablePowerPlants
@@ -42,7 +41,14 @@ class PlayerPowerPlants:
         Raise ValueError for a repeated plant number or if another
         plant is received while already above the limit.
         """
-        raise NotImplementedError
+        owned_numbers = {plant.number.number for plant in self._power_plants}
+        if power_plant.number.number in owned_numbers:
+            raise ValueError("Power plant is already owned.")
+        if len(self._power_plants) > self._power_plant_limit:
+            raise ValueError("A power plant must be removed before receiving another.")
+
+        self._power_plants.append(power_plant)
+        return len(self._power_plants) <= self._power_plant_limit
 
     def remove_power_plant(
         self, ppn: PowerPlantNumber, new_resources: Sequence[Resource]
@@ -54,7 +60,16 @@ class PlayerPowerPlants:
         Leaves state unchanged on error. Returns None on success. The caller
         owns the resource inventory and applies any actual fuel discards.
         """
-        raise NotImplementedError
+        remaining_plants = [
+            plant for plant in self._power_plants if plant.number.number != ppn.number
+        ]
+        if len(remaining_plants) == len(self._power_plants):
+            return RequestError(f"Power plant {ppn.number} is not owned.")
+        if not StoreResources().can_store_resources(new_resources, remaining_plants):
+            return RequestError("Remaining power plants cannot store these resources.")
+
+        self._power_plants = remaining_plants
+        return None
 
     def number_of_connectable_cities(self, resources: Sequence[Resource]) -> int:
         """Returns maximum towns supplied by owned plants with available fuel.
