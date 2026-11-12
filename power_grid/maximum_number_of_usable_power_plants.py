@@ -31,6 +31,9 @@ class MaximumNumberOfUsablePowerPlants:
     def _can_supply(
         self, resource_counts: Counter[Resource], power_plants: Sequence[PowerPlant]
     ) -> bool:
+        """Checks if provided resources can run every given plant once.
+        Left over fuel is allowed.
+        """
         for size in range(1, len(power_plants) + 1):
             for group in combinations(power_plants, size):
                 required = sum(plant.resource_amount for plant in group)
