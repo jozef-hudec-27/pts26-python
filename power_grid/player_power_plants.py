@@ -1,7 +1,9 @@
-# pylint: disable=unused-argument
 from typing import Sequence
 
+from power_grid.maximum_number_of_usable_power_plants import MaximumNumberOfUsablePowerPlants
 from power_grid.simple_types import PowerPlant, PowerPlantNumber, RequestError, Resource
+from power_grid.store_resources import StoreResources
+from power_grid.use_power_plants import UsePowerPlants
 
 
 class PlayerPowerPlants:
@@ -13,11 +15,24 @@ class PlayerPowerPlants:
         Copies the initial collection. Raise ValueError for a < 1 limit,
         repeated plant numbers or an initial collection over limit.
         """
-        raise NotImplementedError
+        if power_plant_limit < 1:
+            raise ValueError("Power plant limit must be positive.")
+        plant_numbers = [plant.number.number for plant in power_plants]
+        if len(plant_numbers) != len(set(plant_numbers)):
+            raise ValueError("Power plant numbers must be unique.")
+        if len(power_plants) > power_plant_limit:
+            raise ValueError("The initial power plant set is too large.")
+
+        self._power_plant_limit = power_plant_limit
+        self._power_plants = list(power_plants)
 
     def best_power_plant(self) -> PowerPlantNumber | None:
         """Returns the highest owned plant number, None if no plants are owned."""
-        raise NotImplementedError
+        if not self._power_plants:
+            return None
+
+        best_plant = max(self._power_plants, key=lambda plant: plant.number.number)
+        return best_plant.number
 
     def receive_power_plant(self, power_plant: PowerPlant) -> bool:
         """Adds a plant and returns whether the collection is within its limit
@@ -26,7 +41,14 @@ class PlayerPowerPlants:
         Raise ValueError for a repeated plant number or if another
         plant is received while already above the limit.
         """
-        raise NotImplementedError
+        owned_numbers = {plant.number.number for plant in self._power_plants}
+        if power_plant.number.number in owned_numbers:
+            raise ValueError("Power plant is already owned.")
+        if len(self._power_plants) > self._power_plant_limit:
+            raise ValueError("A power plant must be removed before receiving another.")
+
+        self._power_plants.append(power_plant)
+        return len(self._power_plants) <= self._power_plant_limit
 
     def remove_power_plant(
         self, ppn: PowerPlantNumber, new_resources: Sequence[Resource]
@@ -38,18 +60,29 @@ class PlayerPowerPlants:
         Leaves state unchanged on error. Returns None on success. The caller
         owns the resource inventory and applies any actual fuel discards.
         """
-        raise NotImplementedError
+        remaining_plants = [
+            plant for plant in self._power_plants if plant.number.number != ppn.number
+        ]
+        if len(remaining_plants) == len(self._power_plants):
+            return RequestError(f"Power plant {ppn.number} is not owned.")
+        if not StoreResources().can_store_resources(new_resources, remaining_plants):
+            return RequestError("Remaining power plants cannot store these resources.")
+
+        self._power_plants = remaining_plants
+        return None
 
     def number_of_connectable_cities(self, resources: Sequence[Resource]) -> int:
         """Returns maximum towns supplied by owned plants with available fuel.
 
         resources is the full available inventory.
         """
-        raise NotImplementedError
+        return MaximumNumberOfUsablePowerPlants().number_of_suppliable_towns(
+            resources, self._power_plants
+        )
 
     def can_store_resources(self, resources: Sequence[Resource]) -> bool:
         """Checks if owned plants can store the full inventory."""
-        raise NotImplementedError
+        return StoreResources().can_store_resources(resources, self._power_plants)
 
     def use_power_plant(
         self, ppns: Sequence[PowerPlantNumber], resources_to_burn: Sequence[Resource]
@@ -60,4 +93,12 @@ class PlayerPowerPlants:
         fuel allocation. The caller checks fuel ownership and consumes
         it after success.
         """
-        raise NotImplementedError
+        owned_plants = {plant.number.number: plant for plant in self._power_plants}
+        selected_plants: list[PowerPlant] = []
+        for ppn in ppns:
+            plant = owned_plants.get(ppn.number)
+            if plant is None:
+                return RequestError(f"Power plant {ppn.number} is not owned.")
+            selected_plants.append(plant)
+
+        return UsePowerPlants().number_of_suppliable_towns(resources_to_burn, selected_plants)
