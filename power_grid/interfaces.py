@@ -1,6 +1,6 @@
 # pylint: disable=unused-argument, duplicate-code
 from typing import Sequence
-from power_grid.simple_types import Resource, PlayerColor, RequestError
+from power_grid.simple_types import Resource, PlayerColor, PowerPlantNumber, RequestError
 
 
 class InterfaceResourcePoolResourceMarket:
@@ -38,4 +38,22 @@ class InterfacePlayerBoardBuildingHouses:
 
     def spend_money(self, amount: int) -> None:
         """Deducts a nonnegative amount within the player's available money."""
+        raise NotImplementedError
+
+class InterfacePlayerBoardDeterminingPlayerOrder:
+    def best_power_plant_number(self) -> PowerPlantNumber:
+        """Returns the player's highest-numbered power plant."""
+        raise NotImplementedError
+
+    def number_of_connectable_cities(self) -> int:
+        """Returns the number of cities the player can power with their resources."""
+        raise NotImplementedError
+
+    def outstanding_money(self) -> int:
+        """Returns the player's available money."""
+        raise NotImplementedError
+
+class InterfaceTownsDeterminePlayerOrder:
+    def get_number_of_built_houses(self, player: PlayerColor) -> int:
+        """Returns the number of houses built by the player."""
         raise NotImplementedError
