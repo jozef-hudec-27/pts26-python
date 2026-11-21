@@ -42,7 +42,7 @@ class DeterminePlayerOrder:
             self._player_boards,
             key=lambda player: (
                 min(
-                    self._towns.get_number_of_built_houses(player),
+                    self._towns.get_number_of_houses(player),
                     self._player_boards[player].number_of_connectable_cities(),
                 ),
                 self._player_boards[player].outstanding_money(),

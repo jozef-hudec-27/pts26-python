@@ -54,6 +54,6 @@ class InterfacePlayerBoardDeterminingPlayerOrder:
         raise NotImplementedError
 
 class InterfaceTownsDeterminePlayerOrder:
-    def get_number_of_built_houses(self, player: PlayerColor) -> int:
+    def get_number_of_houses(self, player: PlayerColor) -> int:
         """Returns the number of houses built by the player."""
         raise NotImplementedError
