@@ -25,6 +25,7 @@ class PlayerPowerPlants:
 
         self._power_plant_limit = power_plant_limit
         self._power_plants = list(power_plants)
+        self._protected_plant_number: int | None = None
 
     def best_power_plant(self) -> PowerPlantNumber | None:
         """Returns the highest owned plant number, None if no plants are owned."""
@@ -48,7 +49,10 @@ class PlayerPowerPlants:
             raise ValueError("A power plant must be removed before receiving another.")
 
         self._power_plants.append(power_plant)
-        return len(self._power_plants) <= self._power_plant_limit
+        if len(self._power_plants) > self._power_plant_limit:
+            self._protected_plant_number = power_plant.number.number
+            return False
+        return True
 
     def remove_power_plant(
         self, ppn: PowerPlantNumber, new_resources: Sequence[Resource]
@@ -60,6 +64,9 @@ class PlayerPowerPlants:
         Leaves state unchanged on error. Returns None on success. The caller
         owns the resource inventory and applies any actual fuel discards.
         """
+        if ppn.number == self._protected_plant_number:
+            return RequestError("The newly bought power plant cannot be removed.")
+
         remaining_plants = [
             plant for plant in self._power_plants if plant.number.number != ppn.number
         ]
@@ -69,6 +76,7 @@ class PlayerPowerPlants:
             return RequestError("Remaining power plants cannot store these resources.")
 
         self._power_plants = remaining_plants
+        self._protected_plant_number = None
         return None
 
     def number_of_connectable_cities(self, resources: Sequence[Resource]) -> int:

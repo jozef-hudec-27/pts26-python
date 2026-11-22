@@ -193,6 +193,25 @@ class TestPlayerPowerPlantUpdates(unittest.TestCase):
             2,
         )
 
+    def test_newly_bought_plant_cannot_be_removed_while_over_limit(self) -> None:
+        board = PlayerPowerPlants(power_plant_limit=1, power_plants=[self.coal_plant])
+        self.assertFalse(board.receive_power_plant(self.ecological_plant))
+        self.assertIsInstance(board.remove_power_plant(PowerPlantNumber(13), []), RequestError)
+        self.assertEqual(board.best_power_plant(), PowerPlantNumber(13))
+        self.assertEqual(
+            board.use_power_plant(
+                [PowerPlantNumber(4), PowerPlantNumber(13)], [Resource.COAL] * 2
+            ),
+            2,
+        )
+
+    def test_successful_replacement_clears_protection(self) -> None:
+        board = PlayerPowerPlants(power_plant_limit=1, power_plants=[self.coal_plant])
+        self.assertFalse(board.receive_power_plant(self.ecological_plant))
+        self.assertIsNone(board.remove_power_plant(PowerPlantNumber(4), []))
+        self.assertIsNone(board.remove_power_plant(PowerPlantNumber(13), []))
+        self.assertIsNone(board.best_power_plant())
+
     def test_duplicate_receipt_leaves_the_board_unchanged(self) -> None:
         board = PlayerPowerPlants(
             power_plant_limit=3, power_plants=[self.coal_plant, self.ecological_plant]
@@ -293,6 +312,9 @@ class TestPlayerPowerPlantUpdates(unittest.TestCase):
             ),
             3,
         )
+        self.assertIsInstance(board.remove_power_plant(PowerPlantNumber(12), []), RequestError)
+        self.assertIsNone(board.remove_power_plant(PowerPlantNumber(13), []))
+        self.assertEqual(board.best_power_plant(), PowerPlantNumber(12))
 
     def test_failed_removal_keeps_receiving_blocked(self) -> None:
         board = PlayerPowerPlants(power_plant_limit=1, power_plants=[self.coal_plant])
@@ -300,6 +322,7 @@ class TestPlayerPowerPlantUpdates(unittest.TestCase):
         self.assertIsInstance(
             board.remove_power_plant(PowerPlantNumber(4), [Resource.COAL]), RequestError
         )
+        self.assertIsInstance(board.remove_power_plant(PowerPlantNumber(13), []), RequestError)
         with self.assertRaises(ValueError):
             board.receive_power_plant(self.hybrid_plant)
         self.assertEqual(board.number_of_connectable_cities([Resource.COAL] * 2), 2)
